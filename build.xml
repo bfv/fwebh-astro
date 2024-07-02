@@ -1,0 +1,140 @@
+<project name="build" default="build" basedir=".">
+    
+  <taskdef resource="PCT.properties" />
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties"/>
+  <typedef resource="types.properties" />
+
+  <property environment="env"/>
+
+  <target name="build" depends="initvars,init">
+  	<antcall target="builddbs" /> 
+    <antcall target="compile" />
+    <antcall target="unittest" />
+    <antcall target="package" />
+  </target>
+
+  <target name="initvars">
+    <property name="srcdir" location="./src" />
+    <property name="rootdir" location="./../.." />
+    <property name="builddir" location="${rootdir}/build" />
+    <property name="dbsdir" location="${builddir}/db" />
+    <property name="dfdir" location="./schema" />
+    <property name="artifactdir" location="${rootdir}/artifacts" />
+    <property name="scriptsdir" location="${srcdir}/../scripts" />
+    <property name="DLC" value="${env.DLC}" />
+
+    <echo message="rootdir:          ${rootdir}" />
+    <echo message="srcdir:           ${srcdir}" />
+    <echo message="builddir:         ${builddir}" />
+    <echo message="artifactdir:      ${artifactdir}" />
+    <echo message="scriptsdir:       ${scriptsdir}" />
+    <echo message="executeUnittests: ${executeUnittests}" />
+    <echo message="DLC:              ${DLC}" />
+  </target>
+
+  <target name="init" unless="initialized">
+    <delete dir="${builddir}" failonerror="false" />
+    <mkdir dir="${builddir}" />  
+    <delete dir="${artifactdir}" failonerror="false" />
+    <mkdir dir="${artifactdir}" />  
+    <property name="initialized" value="true" />    
+  </target>
+  
+  <macrodef name="builddb">
+
+    <attribute name="dbname" />
+    <attribute name="destDir" />
+    <attribute name="multiTenant" default="false" />
+
+    <sequential>
+      <PCTCreateDatabase dbName="@{dbname}" destDir="@{destDir}" dlchome="${DLC}" schemaFile="${dfdir}/@{dbname}.df" structFile="${dfdir}/@{dbname}.st" multiTenant="@{multiTenant}" />
+    </sequential>
+  </macrodef> 
+
+  <target name="builddbs">
+    <mkdir dir="${dbsdir}" />
+  	<builddb dbname="astro" destDir="${dbsdir}" />
+    <!--
+  	<for list="astro" param="dbname">
+      <sequential>
+        <builddb dbname="@{dbname}" destDir="${dbsdir}" />
+      </sequential>
+    </for>
+    -->
+  </target>
+
+	<target name="compile" depends="initvars">
+    
+    <property name="dbdir" location="${builddir}/dbs/framework" />
+      
+    <mkdir dir="${builddir}/xref_out" />
+      
+    <DBConnectionSet id="compiledbs">
+      <DBConnection dbName="astro" dbDir="${dbsdir}" singleUser="true"  readOnly="true">
+        <Alias name="astro" />
+      </DBConnection>
+    </DBConnectionSet>   
+
+		<PCTCompile destdir="${builddir}/rcode" dlchome="${DLC}" stopOnError="true" 
+        graphicalMode="false" forceCompile="true" MD5="true" 
+        keepXref="true" xrefDir="${builddir}/xref_out" 
+        requireFullKeywords="true" requireFullNames="true" requireFieldQualifiers="true"
+        paramfile="${scriptsdir}/build-ci.compile.pf">
+      
+			<DBConnectionSet refid="compiledbs" />
+			
+      <propath>
+        <pathelement path="${srcdir}" />
+        <pathelement path="${DLC}/tty/OpenEdge.Core.pl" />
+        <pathelement path="${DLC}/tty/netlib/OpenEdge.Net.pl" />
+        <pathelement path="${DLC}/tty/ablunit.pl" />
+      	<pathelement path="${rootdir}/deps/fwebh.pl"/>
+      </propath>
+      
+      <fileset dir="${srcdir}">
+        <include name="**/*.p" />
+        <include name="**/*.cls" />
+        <exclude name=".builder/**/*" />
+        <exclude name="devtools/**/*" />
+        <exclude name="sandbox/**/*" />
+        <exclude name="**/test-*.p" /> 
+      </fileset>
+      
+    </PCTCompile>
+  </target>
+
+  <target name="unittest" if="executeUnittests">
+
+    <ABLUnit haltOnFailure="false" writeLog="true" dlchome="${DLC}">
+      <fileset dir="${srcdir}">
+        <include name="**/*_UT.cls" />
+      </fileset> 
+      <propath>
+        <pathelement path="${srcdir}" />
+        <pathelement path="${DLC}/tty/OpenEdge.Core.pl" />
+        <pathelement path="${DLC}/tty/netlib/OpenEdge.Net.pl" />
+        <pathelement path="${DLC}/tty/ablunit.pl" />
+      </propath>
+    </ABLUnit>
+    
+  </target>
+  
+  <target name="package">
+
+    <PCTLibrary destFile="${artifactdir}/astro.pl" dlchome="${DLC}" noCompress="true"
+        cpInternal="utf-8" cpStream="utf-8">
+      <fileset dir="${builddir}/rcode">
+        <include name="**/*.r" />
+        <exclude name="**/*_UT.r" />
+      </fileset>
+    </PCTLibrary>
+
+    <tar destfile="${artifactdir}/xref.tar.gz" compression="gzip" >
+      <fileset dir="${builddir}/xref_out">
+        <include name="**/*" />
+      </fileset>  
+    </tar>
+
+  </target>
+  
+</project>

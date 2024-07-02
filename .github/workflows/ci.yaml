@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - "doc/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+run-name: ci - ${{ github.event.head_commit.message }}
+
+jobs:
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '12.8.3']
+    uses: ./.github/workflows/build.yaml
+    with:
+      version: ${{ matrix.version }}
+      execute_unittests: true
+      build_artifacts_name: 'build-artifacts-${{ matrix.version }}.${{ github.run_number }}'
+    secrets: inherit
+
+  unittest:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '12.8.3' ]
+    uses: ./.github/workflows/unittest.yaml
+    with:
+      build_artifacts_name: 'build-artifacts-${{ matrix.version }}.${{ github.run_number }}'
+
+  # integrationtest:
+  #   needs: build
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       version: [ '12.8.1', '12.8.2', '12.8.3' ]
+  #   uses: ./.github/workflows/integrationtest.yaml
+  #   with:
+  #     version: ${{ matrix.version }}
+  #     build_artifacts_name: 'build-artifacts-${{ matrix.version }}.${{ github.run_number }}'
+  #   secrets: inherit
+
+  testpassed:
+    name: Test passed
+    runs-on: ubuntu-latest
+    needs: [ unittest ]
+    steps:
+      - name: OK?
+        run: echo "OK"
+
