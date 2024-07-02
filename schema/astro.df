@@ -1,0 +1,149 @@
+ADD SEQUENCE "obj_id"
+  INITIAL 0
+  INCREMENT 1
+  CYCLE-ON-LIMIT no
+
+ADD TABLE "catalog"
+  AREA "DataArea"
+  LABEL "catalog"
+  DESCRIPTION "catalogs with celestial object. Messier, NGC, etc"
+  DUMP-NAME "catalog"
+
+ADD FIELD "catalog_id" OF "catalog" AS int64 
+  FORMAT ">,>>>,>>>,>>9"
+  INITIAL "0"
+  LABEL "id"
+  POSITION 2
+  MAX-WIDTH 8
+  COLUMN-LABEL "id"
+  ORDER 10
+
+ADD FIELD "fullname" OF "catalog" AS character 
+  FORMAT "x(32)"
+  INITIAL ""
+  LABEL "full name"
+  POSITION 3
+  MAX-WIDTH 64
+  COLUMN-LABEL "full name"
+  ORDER 20
+
+ADD FIELD "short" OF "catalog" AS character 
+  FORMAT "x(8)"
+  INITIAL ""
+  LABEL "short name"
+  POSITION 4
+  MAX-WIDTH 16
+  COLUMN-LABEL "short name"
+  ORDER 30
+
+ADD FIELD "prefix" OF "catalog" AS character 
+  FORMAT "x(8)"
+  INITIAL ""
+  LABEL "prefix"
+  POSITION 5
+  MAX-WIDTH 16
+  COLUMN-LABEL "prefix"
+  ORDER 40
+
+ADD FIELD "moddt" OF "catalog" AS datetime-tz 
+  FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
+  INITIAL ?
+  LABEL "moddt"
+  POSITION 6
+  MAX-WIDTH 12
+  COLUMN-LABEL "moddt"
+  ORDER 50
+
+ADD INDEX "pk" ON "catalog" 
+  AREA "IndexArea"
+  UNIQUE
+  PRIMARY
+  INDEX-FIELD "catalog_id" ASCENDING 
+
+ADD TABLE "constellation"
+  AREA "DataArea"
+  LABEL "constellation"
+  DESCRIPTION "all 88 constellations"
+  DUMP-NAME "constellation"
+
+ADD FIELD "constellation_id" OF "constellation" AS int64 
+  FORMAT "->,>>>,,>>>,>>9"
+  INITIAL "0"
+  LABEL "id"
+  POSITION 2
+  MAX-WIDTH 8
+  COLUMN-LABEL "id"
+  ORDER 10
+
+ADD FIELD "abbreviation" OF "constellation" AS character 
+  FORMAT "x(3)"
+  INITIAL ""
+  LABEL "abbreviation"
+  POSITION 3
+  MAX-WIDTH 6
+  COLUMN-LABEL "abbr"
+  ORDER 20
+
+ADD FIELD "name" OF "constellation" AS character 
+  DESCRIPTION "The name is is nominative form:
+Hamal, the brightest star in the constellation Aries (nominative form), is also called Alpha Arietis (genitive form), meaning literally the alpha of Aries."
+  FORMAT "x(32)"
+  INITIAL ""
+  LABEL "name"
+  POSITION 4
+  MAX-WIDTH 64
+  COLUMN-LABEL "name"
+  ORDER 30
+
+ADD FIELD "genitive" OF "constellation" AS character 
+  DESCRIPTION "Hamal, the brightest star in the constellation Aries (nominative form), is also called Alpha Arietis (genitive form), meaning literally the alpha of Aries."
+  FORMAT "x(32)"
+  INITIAL ""
+  LABEL "genitive"
+  POSITION 5
+  MAX-WIDTH 64
+  COLUMN-LABEL "gen"
+  ORDER 40
+
+ADD FIELD "ra" OF "constellation" AS decimal 
+  DESCRIPTION "right ascension"
+  FORMAT ">9.9999"
+  INITIAL "0"
+  LABEL "RA"
+  POSITION 6
+  MAX-WIDTH 17
+  COLUMN-LABEL "RA"
+  DECIMALS 2
+  ORDER 50
+
+ADD FIELD "dec" OF "constellation" AS decimal 
+  DESCRIPTION "declination"
+  FORMAT "->9.9999"
+  INITIAL "0"
+  LABEL "Dec"
+  POSITION 7
+  MAX-WIDTH 17
+  COLUMN-LABEL "Dec"
+  DECIMALS 2
+  ORDER 60
+
+ADD FIELD "moddt" OF "constellation" AS datetime-tz 
+  FORMAT "99/99/9999 HH:MM:SS.SSS+HH:MM"
+  INITIAL "now"
+  LABEL "modified at"
+  POSITION 8
+  MAX-WIDTH 12
+  COLUMN-LABEL "modified at"
+  ORDER 70
+
+ADD INDEX "pk" ON "constellation" 
+  AREA "IndexArea"
+  UNIQUE
+  PRIMARY
+  INDEX-FIELD "constellation_id" ASCENDING 
+
+.
+PSC
+cpstream=UTF-8
+.
+0000003174
