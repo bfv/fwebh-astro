@@ -1,0 +1,220 @@
+ 
+ /*------------------------------------------------------------------------
+    File        : CrudResourceService
+    Purpose     : 
+    Syntax      : 
+    Description : 
+    Author(s)   : bronco
+    Created     : Mon Jun 24 09:43:03 CEST 2024
+    Notes       : 
+  ----------------------------------------------------------------------*/
+
+block-level on error undo, throw.
+
+using Progress.Json.ObjectModel.JsonObject.
+using core.data.DynamicQuery.
+using core.error.ConcurrencyException.
+using fwebh.lang.error.BadRequestException.
+using fwebh.pas.data.IRequestData.
+using fwebh.pas.data.IResponseData.
+using fwebh.pas.data.ResponseData.
+using fwebh.serialize.SimpleJsonDeserializer.
+using fwebh.serialize.SimpleJsonSerializer.
+using fwebh.lang.error.NotFoundException.
+
+class core.data.CrudResourceService: 
+  
+  define public property Resource as char no-undo get. private set.
+  define public property TempTableHandle as handle no-undo get. private set.
+  
+  constructor public CrudResourceService(resource as char, htt as handle):
+    this-object:Resource = resource.
+    this-object:TempTableHandle = htt.
+  end.
+  
+  method public IResponseData GetData(request as IRequestData):
+
+    var IResponseData response = new ResponseData().
+    var char tablename = getResourceTable(this-object:Resource).
+    var char id = request:Resource:Id.
+    var DynamicQuery q.
+    var handle ttBufferHandle.
+    
+    ttBufferHandle = TempTableHandle:default-buffer-handle.
+    
+    q = new DynamicQuery(tablename).
+    if id > "" then
+      q:SetWhereClause(substitute("&1_id = &2", tablename, quoter(id))).    
+    
+    q = q:BuildQuery().
+    
+    do while not q:QueryHandle:query-off-end:
+      ttBufferHandle:buffer-create(). 
+      ttBufferHandle:buffer-copy(q:BufferHandle).
+      q:QueryHandle:get-next().
+    end.
+        
+    if id > "" then
+      response:Data:Json = new SimpleJsonSerializer():SerializeBuffer(ttBufferHandle).
+    else
+      response:Data:TempTableHandle = TempTableHandle.
+      
+    return response.
+      
+  end method.  // GetData
+  
+  method public IResponseData PostData(request as IRequestData):
+
+    var IResponseData response = new ResponseData().
+    var JsonObject json.
+    var int64 idFieldValue, id = int(request:Resource:Id).
+    var char tablename = getResourceTable(this-object:Resource).
+    var char idField.
+    var handle dbBufferHandle, ttBufferHandle.
+     
+    create buffer dbBufferHandle for table tablename.
+    ttBufferHandle = TempTableHandle:default-buffer-handle  .
+    
+    json = cast(request:Data:Json, JsonObject).
+    
+    new SimpleJsonDeserializer():JsonObjectToTempTable(json, TempTableHandle).
+    ttBufferHandle:find-first().
+    
+    idField = substitute("&1_id", tablename).
+           
+    do transaction on error undo, throw:
+
+      dbBufferHandle:buffer-create().
+      dbBufferHandle:buffer-copy(ttBufferHandle, substitute("&1,moddt", idField)).
+      dbBufferHandle:buffer-field(idField):buffer-value = dynamic-next-value("obj_id", ldbname(1)).
+      dbBufferHandle::moddt = now.      
+      dbBufferHandle:buffer-validate().
+      
+      catch err1 as Progress.Lang.Error :
+        message substitute("transction failed, resource: &1, id: &2", Resource, idFieldValue).
+        undo, throw err1.
+      end catch.
+      
+    end.  // transaction
+    
+    ttBufferHandle:buffer-copy(dbBufferHandle).
+    response:Data:TempTableHandle = TempTableHandle.
+    dbBufferHandle:buffer-release().
+            
+    return response.
+    
+    finally:
+      delete object dbBufferHandle.
+    end.
+    
+  end method.  // PostData
+
+  method public IResponseData PutData(request as IRequestData):
+
+    var IResponseData response = new ResponseData().
+    var JsonObject json.
+    var int64 idFieldValue, id = int(request:Resource:Id).
+    var char tablename = getResourceTable(this-object:Resource).
+    var char idField.
+    var handle dbBufferHandle, ttBufferHandle.
+     
+    create buffer dbBufferHandle for table tablename.
+    ttBufferHandle = TempTableHandle:default-buffer-handle  .
+    
+    json = cast(request:Data:Json, JsonObject).
+    
+    new SimpleJsonDeserializer():JsonObjectToTempTable(json, TempTableHandle).
+    ttBufferHandle:find-first().
+    
+    idField = substitute("&1_id", tablename).
+    idFieldValue = ttBufferHandle:buffer-field(idField):buffer-value.
+    
+    response:Data:TempTableHandle = TempTableHandle.
+    if id <> idFieldValue and idFieldValue <> ? then
+      undo, throw new BadRequestException(substitute("id cannot be changed, url: &1, data: &2", id, idFieldValue)).
+    
+    dbBufferHandle:find-first(substitute("where &1_id = &2", tablename, quoter(id)), no-lock) no-error.
+    if not dbBufferHandle:available then 
+      undo, throw new NotFoundException(substitute("resource: &1, id: &2", request:Resource:Name, id)).
+
+    if dbBufferHandle::moddt > ttBufferHandle::moddt then
+      undo, throw new ConcurrencyException(this-object:Resource, idFieldValue).
+       
+    do transaction on error undo, throw:
+
+      dbBufferHandle:find-current(exclusive-lock).
+      dbBufferHandle:buffer-copy(ttBufferHandle, "moddt").
+      dbBufferHandle::moddt = now.      
+      dbBufferHandle:buffer-validate().
+      
+      catch err1 as Progress.Lang.Error :
+        message substitute("transction failed, resource: &1, id: &2", Resource, idFieldValue).
+        undo, throw err1.
+      end catch.
+      
+    end.  // transaction
+    
+    ttBufferHandle:buffer-copy(dbBufferHandle).
+    dbBufferHandle:buffer-release().
+            
+    return response.
+    
+    finally:
+      delete object dbBufferHandle.
+    end.
+    
+  end method.  // PutData
+  
+  method public IResponseData DeleteData(request as IRequestData):
+    
+    var IResponseData response = new ResponseData().
+    var JsonObject json.
+    var int64 idFieldValue, id = int(request:Resource:Id).
+    var char tablename = getResourceTable(this-object:Resource).
+    var char idField.
+    var handle dbBufferHandle.
+    
+    create buffer dbBufferHandle for table tablename.
+    
+    idField = substitute("&1_id", tablename).
+    
+    dbBufferHandle:find-first(substitute("where &1_id = &2", tablename, quoter(id)), no-lock) no-error.
+    if not dbBufferHandle:available then 
+      undo, throw new NotFoundException(substitute("resource: &1, id: &2", request:Resource:Name, id)).
+    @todo(what="call validate logic").
+           
+    do transaction on error undo, throw:
+
+      dbBufferHandle:find-current(exclusive-lock).
+      dbBufferHandle:buffer-delete().
+      
+      catch err1 as Progress.Lang.Error :
+        message substitute("transction failed, resource: &1, id: &2, msg: &3", Resource, idFieldValue, err1:GetMessage(1)).
+        undo, throw err1.
+      end catch.
+      
+    end.  // transaction
+    
+    return response.
+        
+    finally:
+      delete object dbBufferHandle.
+    end.
+    
+  end method.  // DeleteData
+  
+  method private char getResourceTable(resource as char):
+    // moet eigenlijk uit de TableResourceMapping komen
+    
+    var char tablename.
+    
+    case resource:
+      when "constellations" then tablename = "constellation".
+      when "catalogs" then tablename = "catalog".
+    end.
+    
+    return tablename.
+    
+  end method.
+  
+end class.  // CrudResourceService

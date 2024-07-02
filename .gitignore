@@ -1,0 +1,15 @@
+
+.builder/
+.settings/
+bin/
+sandbox/
+workspace/
+
+src/import/
+
+*.r
+
+assemblies.xml
+build.config
+progress.cfg
+results.xml
