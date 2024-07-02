@@ -89,7 +89,8 @@ jobs:
         run: |
           cp ${PWD}/src/astro/src/services.json ${PWD}/artifacts
           cp ${PWD}/src/astro/src/entitywriter.json ${PWD}/artifacts
-          cp ${PWD}/src/astro/src/astro/pas/webhandlers/ROOT.handlers ${PWD}/artifacts
+          cp ${PWD}/src/astro/src/ROOT.handlers ${PWD}/artifacts
+          cp ${PWD}/src/astro/deps/fwebh.pl ${PWD}/artifacts
           ls -l artifacts | grep -v '^total'
 
       - name: Add Git info

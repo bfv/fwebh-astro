@@ -1,0 +1,4 @@
+{
+  "catalogs": {"classname": "space.CatalogService"},
+  "constellations": {"classname": "space.ConstellationService"}
+}

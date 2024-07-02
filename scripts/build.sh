@@ -13,4 +13,4 @@ fi
 
 ${ANT_HOME}/bin/ant -f ${scriptpath}/../build.xml -lib /usr/dlc/pct ${unittestExpr}
 
-$DLC/bin/prolib /app/artifacts/fwebh.pl -list > /app/artifacts/fwebh-rcode.list
+$DLC/bin/prolib /app/artifacts/astro.pl -list > /app/artifacts/astro-rcode.list

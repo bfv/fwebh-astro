@@ -88,7 +88,7 @@
         <pathelement path="${DLC}/tty/OpenEdge.Core.pl" />
         <pathelement path="${DLC}/tty/netlib/OpenEdge.Net.pl" />
         <pathelement path="${DLC}/tty/ablunit.pl" />
-      	<pathelement path="${rootdir}/deps/fwebh.pl"/>
+      	<pathelement path="./deps/fwebh.pl"/>
       </propath>
       
       <fileset dir="${srcdir}">
