@@ -32,7 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
         with:
-          path: src/fwebh
+          path: src/astro
 
       - name: Login to Docker registry
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20  # v3.1.0
@@ -71,8 +71,8 @@ jobs:
         run: | 
           mkdir artifacts
           ls -l ${PWD}/license/
-          docker run -v ${PWD}/src:/app/src -v ${PWD}/artifacts:/app/artifacts -v ${PWD}/license/progress.cfg:/usr/dlc/progress.cfg --env ANT_HOME=/usr/dlc/ant --env EXECUTE_UNITTESTS=${EXECUTE_UNITTESTS} ${IMAGE_NAME} /app/src/fwebh/scripts/build.sh
-          [[ -e src/fwebh/results.xml ]] && cp src/fwebh/results.xml ${PWD}/artifacts
+          docker run -v ${PWD}/src:/app/src -v ${PWD}/artifacts:/app/artifacts -v ${PWD}/license/progress.cfg:/usr/dlc/progress.cfg --env ANT_HOME=/usr/dlc/ant --env EXECUTE_UNITTESTS=${EXECUTE_UNITTESTS} ${IMAGE_NAME} /app/src/astro/scripts/build.sh
+          [[ -e src/astro/results.xml ]] && cp src/astro/results.xml ${PWD}/artifacts
           ls -l ${PWD}/artifacts 
 
       - name: Check unit tests
@@ -87,9 +87,10 @@ jobs:
   
       - name: Copy extra files
         run: |
-          cp ${PWD}/src/fwebh/src/services.json ${PWD}/artifacts
-          cp ${PWD}/src/fwebh/src/entitywriter.json ${PWD}/artifacts
-          cp ${PWD}/src/fwebh/src/fwebh/pas/webhandlers/ROOT.handlers ${PWD}/artifacts
+          cp ${PWD}/src/astro/src/services.json ${PWD}/artifacts
+          cp ${PWD}/src/astro/src/entitywriter.json ${PWD}/artifacts
+          cp ${PWD}/src/astro/src/ROOT.handlers ${PWD}/artifacts
+          cp ${PWD}/src/astro/deps/fwebh.pl ${PWD}/artifacts
           ls -l artifacts | grep -v '^total'
 
       - name: Add Git info
