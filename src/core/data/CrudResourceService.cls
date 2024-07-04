@@ -36,6 +36,8 @@ class core.data.CrudResourceService:
     this-object:TempTableHandle = htt.
     @todo(what="load once per session").
     resourceDef = new TableResourceMappings():Get(resource). 
+    // for REST, output the idfield as "id", not the db field name
+    htt:default-buffer-handle:buffer-field(resourceDef:idField):serialize-name = "id".
   end.
   
   method public IResponseData GetData(request as IRequestData):
