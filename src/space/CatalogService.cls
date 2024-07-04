@@ -19,7 +19,13 @@ using fwebh.pas.service.IPutDataService.
 
 class space.CatalogService inherits CrudResourceService implements IPostDataService, IGetDataService, IPutDataService, IDeleteDataService: 
 
-  define temp-table tt no-undo like catalog.
+  define temp-table tt no-undo
+    field catalog_id as int64
+    field fullname as char serialize-name "name"
+    field short as char
+    field prefix as char
+    field moddt as datetime-tz
+    .
 
   constructor public CatalogService():
     super("catalogs", temp-table tt:handle).
