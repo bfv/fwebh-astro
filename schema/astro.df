@@ -60,6 +60,21 @@ ADD INDEX "pk" ON "catalog"
   PRIMARY
   INDEX-FIELD "catalog_id" ASCENDING 
 
+ADD INDEX "fullname" ON "catalog" 
+  AREA "IndexArea"
+  UNIQUE
+  INDEX-FIELD "fullname" ASCENDING 
+
+ADD INDEX "prefix" ON "catalog" 
+  AREA "IndexArea"
+  UNIQUE
+  INDEX-FIELD "prefix" ASCENDING 
+
+ADD INDEX "short" ON "catalog" 
+  AREA "IndexArea"
+  UNIQUE
+  INDEX-FIELD "short" ASCENDING 
+
 ADD TABLE "constellation"
   AREA "DataArea"
   LABEL "constellation"
@@ -142,8 +157,23 @@ ADD INDEX "pk" ON "constellation"
   PRIMARY
   INDEX-FIELD "constellation_id" ASCENDING 
 
+ADD INDEX "abbreviation" ON "constellation" 
+  AREA "IndexArea"
+  UNIQUE
+  INDEX-FIELD "abbreviation" ASCENDING 
+
+ADD INDEX "genitive" ON "constellation" 
+  AREA "IndexArea"
+  UNIQUE
+  INDEX-FIELD "genitive" ASCENDING 
+
+ADD INDEX "name" ON "constellation" 
+  AREA "IndexArea"
+  UNIQUE
+  INDEX-FIELD "name" ASCENDING 
+
 .
 PSC
 cpstream=UTF-8
 .
-0000003174
+0000003812

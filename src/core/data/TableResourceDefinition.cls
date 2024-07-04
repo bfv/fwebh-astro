@@ -21,6 +21,7 @@ class core.data.TableResourceDefinition:
     end.
     set.
   define public property required as char extent no-undo get. set.
+  define public property unique as char extent no-undo get. set. 
   
   constructor public TableResourceDefinition(resource as char, tablename as char):
     this-object:resource = resource.

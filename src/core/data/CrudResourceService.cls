@@ -90,22 +90,23 @@ class core.data.CrudResourceService:
     idField = resourceDef:idField.
     
     validateRequiredFields(ttBufferHandle, resourceDef, true).
+    validateUniqueFields(ttBufferHandle, resourceDef, true).
            
     do transaction on error undo, throw:
 
       dbBufferHandle:buffer-create().
       dbBufferHandle:buffer-copy(ttBufferHandle, substitute("&1,moddt", idField)).
       dbBufferHandle:buffer-field(idField):buffer-value = dynamic-next-value("obj_id", ldbname(1)).
-      dbBufferHandle::moddt = now.      
+      dbBufferHandle::moddt = now.
       dbBufferHandle:buffer-validate().
-      
+
       catch err1 as Progress.Lang.Error :
         message substitute("transaction failed, resource: &1, id: &2", Resource, idFieldValue).
         undo, throw err1.
       end catch.
-      
+
     end.  // transaction
-    
+
     ttBufferHandle:buffer-copy(dbBufferHandle).
     response:Data:TempTableHandle = TempTableHandle.
     dbBufferHandle:buffer-release().
@@ -150,21 +151,22 @@ class core.data.CrudResourceService:
       undo, throw new ConcurrencyException(this-object:Resource, idFieldValue).
     
     validateRequiredFields(ttBufferHandle, resourceDef, false).
-
+    validateUniqueFields(ttBufferHandle, resourceDef, false).
+    
     do transaction on error undo, throw:
 
       dbBufferHandle:find-current(exclusive-lock).
       dbBufferHandle:buffer-copy(ttBufferHandle, "moddt").
-      dbBufferHandle::moddt = now.      
+      dbBufferHandle::moddt = now.
       dbBufferHandle:buffer-validate().
-      
+
       catch err1 as Progress.Lang.Error :
         message substitute("transaction failed, resource: &1, id: &2", Resource, idFieldValue).
         undo, throw err1.
       end catch.
-      
+
     end.  // transaction
-    
+
     ttBufferHandle:buffer-copy(dbBufferHandle).
     dbBufferHandle:buffer-release().
             
@@ -199,7 +201,7 @@ class core.data.CrudResourceService:
       dbBufferHandle:buffer-delete().
       
       catch err1 as Progress.Lang.Error:
-        message substitute("transction failed, resource: &1, id: &2, msg: &3", Resource, idFieldValue, err1:GetMessage(1)).
+        message substitute("transaction failed, resource: &1, id: &2, msg: &3", Resource, idFieldValue, err1:GetMessage(1)).
         undo, throw err1.
       end catch.
       
@@ -232,5 +234,33 @@ class core.data.CrudResourceService:
     return emptyFields.
     
   end.  // validateRequiredFields
+  
+  method private char validateUniqueFields(ttBufferHandle as handle, resourceDef as TableResourceDefinition, isCreate as logical):
+
+    var char uniqueFields, whereClause.
+    var int i.
+    var handle fieldHandle, dbBufferHandle.
+
+    create buffer dbBufferHandle for table resourceDef:tableName.
+    do i = 1 to extent(resourceDef:unique):
+    
+      fieldHandle = ttBufferHandle:buffer-field(resourceDef:required[i]).
+      whereClause = substitute("where &1 = &2", fieldHandle:name, quoter(fieldHandle:buffer-value)).
+      if not isCreate then
+        whereClause += substitute(" and &1 <> &2", resourceDef:idField, quoter(ttBufferHandle:buffer-field(resourceDef:idField):buffer-value)).
+      
+      dbBufferHandle:find-first(whereClause) no-error.
+      if dbBufferHandle:available then
+        uniqueFields += substitute("&1 already exists with value &2,", fieldHandle:serialize-name, quoter(fieldHandle:buffer-value)).
+    end.
+    
+    if uniqueFields > "" then
+      undo, throw new BadRequestException(replace(trim(uniqueFields, ","), ",", "~n")).
+        
+    finally:
+      delete object dbBufferHandle.
+    end. 
+    
+  end method.  // validateUniqueFields
   
 end class.  // CrudResourceService

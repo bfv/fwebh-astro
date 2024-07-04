@@ -1,4 +1,4 @@
 {
-  "constellations": { "tablename": "constellation", "required": ["abbreviation", "name", "genitive"] },
-  "catalogs": { "tablename": "catalog", "required": ["fullname", "short", "prefix"] }    
+  "constellations": { "tablename": "constellation", "required": ["abbreviation", "name", "genitive"], "unique": ["abbreviation", "name", "genitive"] },
+  "catalogs": { "tablename": "catalog", "required": ["fullname", "short", "prefix"], "unique": ["fullname", "short", "prefix"] }    
 }
