@@ -41,7 +41,7 @@ class core.data.CrudResourceService:
   method public IResponseData GetData(request as IRequestData):
 
     var IResponseData response = new ResponseData().
-    var char tablename = getResourceTable(this-object:Resource).
+    var char tablename = resourceDef:tableName.
     var char id = request:Resource:Id.
     var DynamicQuery q.
     var handle ttBufferHandle.
@@ -74,11 +74,10 @@ class core.data.CrudResourceService:
     var IResponseData response = new ResponseData().
     var JsonObject json.
     var int64 idFieldValue, id = int(request:Resource:Id).
-    var char tablename = getResourceTable(this-object:Resource).
     var char idField.
     var handle dbBufferHandle, ttBufferHandle.
      
-    create buffer dbBufferHandle for table tablename.
+    create buffer dbBufferHandle for table resourceDef:tableName.
     ttBufferHandle = TempTableHandle:default-buffer-handle  .
     
     json = cast(request:Data:Json, JsonObject).
@@ -87,6 +86,8 @@ class core.data.CrudResourceService:
     ttBufferHandle:find-first().
     
     idField = resourceDef:idField.
+    
+    validateRequiredFields(ttBufferHandle, resourceDef, true).
            
     do transaction on error undo, throw:
 
@@ -120,11 +121,10 @@ class core.data.CrudResourceService:
     var IResponseData response = new ResponseData().
     var JsonObject json.
     var int64 idFieldValue, id = int(request:Resource:Id).
-    var char tablename = getResourceTable(this-object:Resource).
     var char idField.
     var handle dbBufferHandle, ttBufferHandle.
      
-    create buffer dbBufferHandle for table tablename.
+    create buffer dbBufferHandle for table resourceDef:tableName.
     ttBufferHandle = TempTableHandle:default-buffer-handle  .
     
     json = cast(request:Data:Json, JsonObject).
@@ -146,7 +146,9 @@ class core.data.CrudResourceService:
     // if one doesn't send the moddt it received, the resource is either out of date of tampered with
     if dbBufferHandle::moddt <> ttBufferHandle::moddt then
       undo, throw new ConcurrencyException(this-object:Resource, idFieldValue).
-       
+    
+    validateRequiredFields(ttBufferHandle, resourceDef, false).
+
     do transaction on error undo, throw:
 
       dbBufferHandle:find-current(exclusive-lock).
@@ -177,11 +179,10 @@ class core.data.CrudResourceService:
     var IResponseData response = new ResponseData().
     var JsonObject json.
     var int64 idFieldValue, id = int(request:Resource:Id).
-    var char tablename = getResourceTable(this-object:Resource).
     var char idField.
     var handle dbBufferHandle.
     
-    create buffer dbBufferHandle for table tablename.
+    create buffer dbBufferHandle for table resourceDef:tableName.
     
     idField = resourceDef:idField.
     
@@ -195,7 +196,7 @@ class core.data.CrudResourceService:
       dbBufferHandle:find-current(exclusive-lock).
       dbBufferHandle:buffer-delete().
       
-      catch err1 as Progress.Lang.Error :
+      catch err1 as Progress.Lang.Error:
         message substitute("transction failed, resource: &1, id: &2, msg: &3", Resource, idFieldValue, err1:GetMessage(1)).
         undo, throw err1.
       end catch.
@@ -210,18 +211,24 @@ class core.data.CrudResourceService:
     
   end method.  // DeleteData
   
-  method private char getResourceTable(resource as char):
-    // moet eigenlijk uit de TableResourceMapping komen
+  method private char validateRequiredFields(ttBufferHandle as handle, resourceDef as TableResourceDefinition, isCreate as logical):
     
-    var char tablename.
-    
-    case resource:
-      when "constellations" then tablename = "constellation".
-      when "catalogs" then tablename = "catalog".
+    var char emptyFields.
+    var int i.
+    var handle fieldHandle.
+      
+    do i = 1 to extent(resourceDef:required):      
+      fieldHandle = ttBufferHandle:buffer-field(resourceDef:required[i]).
+      if fieldHandle:buffer-value = ? or fieldHandle:buffer-value = "" then do:
+        emptyFields += "," + fieldHandle:serialize-name.
+      end.
     end.
     
-    return tablename.
+    if emptyFields > "" then
+      undo, throw new BadRequestException("fields should be filled: " + trim(emptyFields, ",")).
     
-  end method.
+    return emptyFields.
+    
+  end.  // validateRequiredFields
   
 end class.  // CrudResourceService
