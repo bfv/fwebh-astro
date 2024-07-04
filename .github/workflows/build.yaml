@@ -39,6 +39,15 @@ jobs:
         with:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
+      
+      - name: Download fwebh dependency
+        run: |
+          mkdir ${PWD}/src/astro/deps
+          fwebh_version=$(jq -r '.fwebh' ${PWD}/src/astro/dependencies.json)
+          echo "Downloading fwebh version ${fwebh_version}"
+          docker run -v ${PWD}/src/astro/deps:/target docker.io/devbfvio/fwebh:${fwebh_version}-12.8 
+          echo "src/astro/deps content:"
+          ls -l ${PWD}/src/astro/deps
 
       - name: Build Docker image name
         env:
