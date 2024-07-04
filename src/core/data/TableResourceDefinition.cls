@@ -17,9 +17,10 @@ class core.data.TableResourceDefinition:
   define public property tableName as char no-undo get. set.
   define public property idField as char no-undo
     get():
-      return (if IdField > "" then idField else substitute("&1_id", tableName)).
+      return (if IdField > "" then idField else substitute("&1_id", tableName)).  // default to <tablename>_id
     end.
     set.
+  define public property required as char extent no-undo get. set.
   
   constructor public TableResourceDefinition(resource as char, tablename as char):
     this-object:resource = resource.

@@ -13,23 +13,29 @@ block-level on error undo, throw.
 
 using Progress.Json.ObjectModel.JsonObject.
 using core.data.DynamicQuery.
-using core.error.ConcurrencyException.
 using fwebh.lang.error.BadRequestException.
+using fwebh.lang.error.ConcurrencyException.
+using fwebh.lang.error.NotFoundException.
 using fwebh.pas.data.IRequestData.
 using fwebh.pas.data.IResponseData.
 using fwebh.pas.data.ResponseData.
 using fwebh.serialize.SimpleJsonDeserializer.
 using fwebh.serialize.SimpleJsonSerializer.
-using fwebh.lang.error.NotFoundException.
+using core.data.TableResourceDefinition.
+using core.data.TableResourceMappings.
 
 class core.data.CrudResourceService: 
   
   define public property Resource as char no-undo get. private set.
   define public property TempTableHandle as handle no-undo get. private set.
   
+  var TableResourceDefinition resourceDef.
+  
   constructor public CrudResourceService(resource as char, htt as handle):
     this-object:Resource = resource.
     this-object:TempTableHandle = htt.
+    @todo(what="load once per session").
+    resourceDef = new TableResourceMappings():Get(resource). 
   end.
   
   method public IResponseData GetData(request as IRequestData):
@@ -44,7 +50,7 @@ class core.data.CrudResourceService:
     
     q = new DynamicQuery(tablename).
     if id > "" then
-      q:SetWhereClause(substitute("&1_id = &2", tablename, quoter(id))).    
+      q:SetWhereClause(substitute("&1 = &2", resourceDef:idField, quoter(id))).    
     
     q = q:BuildQuery().
     
@@ -80,7 +86,7 @@ class core.data.CrudResourceService:
     new SimpleJsonDeserializer():JsonObjectToTempTable(json, TempTableHandle).
     ttBufferHandle:find-first().
     
-    idField = substitute("&1_id", tablename).
+    idField = resourceDef:idField.
            
     do transaction on error undo, throw:
 
@@ -91,7 +97,7 @@ class core.data.CrudResourceService:
       dbBufferHandle:buffer-validate().
       
       catch err1 as Progress.Lang.Error :
-        message substitute("transction failed, resource: &1, id: &2", Resource, idFieldValue).
+        message substitute("transaction failed, resource: &1, id: &2", Resource, idFieldValue).
         undo, throw err1.
       end catch.
       
@@ -126,18 +132,19 @@ class core.data.CrudResourceService:
     new SimpleJsonDeserializer():JsonObjectToTempTable(json, TempTableHandle).
     ttBufferHandle:find-first().
     
-    idField = substitute("&1_id", tablename).
+    idField = resourceDef:idField.
     idFieldValue = ttBufferHandle:buffer-field(idField):buffer-value.
     
     response:Data:TempTableHandle = TempTableHandle.
     if id <> idFieldValue and idFieldValue <> ? then
       undo, throw new BadRequestException(substitute("id cannot be changed, url: &1, data: &2", id, idFieldValue)).
     
-    dbBufferHandle:find-first(substitute("where &1_id = &2", tablename, quoter(id)), no-lock) no-error.
+    dbBufferHandle:find-first(substitute("where &1 = &2", idField, quoter(id)), no-lock) no-error.
     if not dbBufferHandle:available then 
       undo, throw new NotFoundException(substitute("resource: &1, id: &2", request:Resource:Name, id)).
-
-    if dbBufferHandle::moddt > ttBufferHandle::moddt then
+    
+    // if one doesn't send the moddt it received, the resource is either out of date of tampered with
+    if dbBufferHandle::moddt <> ttBufferHandle::moddt then
       undo, throw new ConcurrencyException(this-object:Resource, idFieldValue).
        
     do transaction on error undo, throw:
@@ -148,7 +155,7 @@ class core.data.CrudResourceService:
       dbBufferHandle:buffer-validate().
       
       catch err1 as Progress.Lang.Error :
-        message substitute("transction failed, resource: &1, id: &2", Resource, idFieldValue).
+        message substitute("transaction failed, resource: &1, id: &2", Resource, idFieldValue).
         undo, throw err1.
       end catch.
       
@@ -176,9 +183,9 @@ class core.data.CrudResourceService:
     
     create buffer dbBufferHandle for table tablename.
     
-    idField = substitute("&1_id", tablename).
+    idField = resourceDef:idField.
     
-    dbBufferHandle:find-first(substitute("where &1_id = &2", tablename, quoter(id)), no-lock) no-error.
+    dbBufferHandle:find-first(substitute("where &1 = &2", idField, quoter(id)), no-lock) no-error.
     if not dbBufferHandle:available then 
       undo, throw new NotFoundException(substitute("resource: &1, id: &2", request:Resource:Name, id)).
     @todo(what="call validate logic").

@@ -1,5 +1,4 @@
 {
-  "mappings": [
-    { "resource": "constellations", "tablename": "constellation" }
-  ]
+  "constellations": { "tablename": "constellation", "required": ["abbreviation", "name", "genitive"] },
+  "catalogs": { "tablename": "catalog", "required": ["fullname", "short", "prefix"] }    
 }
