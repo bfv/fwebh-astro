@@ -1,0 +1,60 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "OpenAPI documentation for Astro services",
+    "description": "",
+    "termsOfService": "",
+    "contact": {
+      "name": "",
+      "url": "",
+      "email": ""
+    },
+    "license": {
+      "name": "",
+      "url": ""
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "{ctx}/web/v1",
+      "description": "Default relative-path configuration",
+      "variables": {
+        "ctx": {
+          "description": "The webapp/context for this service. Empty/blank indicates ROOT",
+          "default": ""
+        }
+      }
+    },
+    {
+      "url": "{scheme}://{host}:{port}{ctx}/web/v1",
+      "description": "Default server configuration",
+      "variables": {
+        "scheme": {
+          "enum": [
+            "http",
+            "https"
+          ],
+          "default": "http"
+        },
+        "host": {
+          "default": "localhost"
+        },
+        "port": {
+          "default": "8810"
+        },
+        "ctx": {
+          "description": "The webapp/context for this service. Empty/blank indicates ROOT",
+          "default": ""
+        }
+      }
+    }
+  ],
+  "components": {
+    "schemas": {},
+    "securitySchemas": null
+  },
+  "security": [],
+  "tags": [ ],
+  "externalDocs": null
+}
